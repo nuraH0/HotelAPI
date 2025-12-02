@@ -23,13 +23,13 @@ namespace HotelAPI.Controllers
             _config = config;
         }
 
-        // POST: api/auth/register
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] User user)
         {
             if (await _context.Users.AnyAsync(u => u.Email == user.Email))
                 return BadRequest("Email već postoji.");
 
+            // Hash-uj plaintext lozinku koja dolazi u PasswordHash
             user.PasswordHash = PasswordHelper.CreatePasswordHash(user.PasswordHash);
 
             _context.Users.Add(user);
@@ -38,19 +38,23 @@ namespace HotelAPI.Controllers
             return Ok(new { message = "Korisnik registrovan" });
         }
 
-        // POST: api/auth/login
+
+
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] User loginData)
         {
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == loginData.Email);
-            if (user == null) return Unauthorized("Pogrešan email ili lozinka.");
+            if (user == null)
+                return Unauthorized("Pogrešan email ili lozinka.");
 
-            bool valid = PasswordHelper.VerifyPassword(loginData.PasswordHash, user.PasswordHash);
-            if (!valid) return Unauthorized("Pogrešan email ili lozinka.");
+            if (!PasswordHelper.VerifyPassword(loginData.PasswordHash, user.PasswordHash))
+                return Unauthorized("Pogrešan email ili lozinka.");
 
             var token = GenerateJwtToken(user);
             return Ok(new { token });
         }
+
+
 
         private string GenerateJwtToken(User user)
         {
@@ -59,10 +63,10 @@ namespace HotelAPI.Controllers
 
             var claims = new[]
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role)
-            };
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Role, user.Role)
+        };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -78,4 +82,5 @@ namespace HotelAPI.Controllers
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
+
 }

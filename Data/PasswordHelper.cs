@@ -15,8 +15,8 @@ namespace HotelAPI.Helpers
 
         public static bool VerifyPassword(string password, string hash)
         {
-            var computedHash = CreatePasswordHash(password);
-            return computedHash == hash;
+            return CreatePasswordHash(password) == hash;
         }
     }
+
 }

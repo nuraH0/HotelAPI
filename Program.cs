@@ -1,20 +1,30 @@
-using HotelAPI.Data;
+﻿using HotelAPI.Data;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using System.Text.Json.Serialization; // DODAJ OVO
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllers()
-    // OVA LINIJA RJE�AVA PROBLEM KRU�NIH REFERENCI
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
         options.JsonSerializerOptions.WriteIndented = true;
     });
+
+// ✅ CORS – dozvoli Angular frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAngularApp", policy =>
+    {
+        policy.WithOrigins("http://localhost:4200") // Angular app
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 // Dodaj DbContext
 builder.Services.AddDbContext<HotelDbContext>(options =>
@@ -91,6 +101,9 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// ✅ OVDE DODAJ CORS prije auth middleware
+app.UseCors("AllowAngularApp");
 
 app.UseAuthentication();
 app.UseAuthorization();
